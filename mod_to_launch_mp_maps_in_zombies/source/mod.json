@@ -1,0 +1,6 @@
+{
+  "name": "MP Maps in Zombies",
+  "author": "Liam McCormack",
+  "description": "Launcher for the multiplayer maps ported to zombies: a QUICK LAUNCH page on the main lobby, loading screens and menu art that usermaps alone cannot load, sv_cheats and some custom commands.",
+  "version": "1.0"
+}

@@ -1,0 +1,3 @@
+mod_to_launch_mp_maps_in_zombies/.env
+mod_to_launch_mp_maps_in_zombies/scripts/__pycache__/*
+mod_to_launch_mp_maps_in_zombies/build/mods/*

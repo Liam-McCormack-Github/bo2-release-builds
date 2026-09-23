@@ -57,6 +57,62 @@ for i = 1, #CoD.QuickLaunch.Usermaps do
 	CoD.QuickLaunch.UsermapNames[CoD.QuickLaunch.Usermaps[i].map] = true
 end
 
+CoD.QuickLaunch.UsermapPaks = {
+	zm_nuketown_2020 = "dlc0",
+	zm_downhill = "dlc1", zm_hydro = "dlc1", zm_mirage = "dlc1", zm_skate = "dlc1",
+	zm_concert = "dlc2", zm_magma = "dlc2", zm_studio = "dlc2", zm_vertigo = "dlc2",
+	zm_bridge = "dlc3", zm_castaway = "dlc3", zm_paintball = "dlc3", zm_uplink = "dlc3",
+	zm_dig = "dlc4", zm_frostbite = "dlc4", zm_pod = "dlc4", zm_takeoff = "dlc4",
+}
+
+CoD.QuickLaunch.PakNames = {
+	mp = "Multiplayer",
+	dlc0 = "Nuketown 2025",
+	dlc1 = "Revolution",
+	dlc2 = "Uprising",
+	dlc3 = "Vengeance",
+	dlc4 = "Apocalypse",
+}
+
+CoD.QuickLaunch.PakCache = {}
+CoD.QuickLaunch.PakAvailable = function ( pak )
+	local cached = CoD.QuickLaunch.PakCache[pak]
+	if cached ~= nil then
+		return cached.value
+	end
+
+	local ok, value = pcall( Engine.IsContentAvailableByPakName, pak )
+	if not ok then
+		value = nil
+	end
+	CoD.QuickLaunch.PakCache[pak] = { value = value }
+	return value
+end
+CoD.QuickLaunch.MissingDlcOf = function ( entry )
+	local pak = CoD.QuickLaunch.UsermapPaks[entry.map]
+	if pak ~= nil and CoD.QuickLaunch.PakAvailable( pak ) == false then
+		return CoD.QuickLaunch.PakNames[pak]
+	end
+	return nil
+end
+
+CoD.QuickLaunch.RequiresOf = function ( entry )
+	if CoD.QuickLaunch.UsermapNames[entry.map] ~= true then
+		return "", false
+	end
+
+	local missing = CoD.QuickLaunch.MissingDlcOf( entry )
+	if missing ~= nil then
+		return "Missing DLC (" .. missing .. ")", true
+	end
+
+	local pak = CoD.QuickLaunch.UsermapPaks[entry.map]
+	if pak ~= nil then
+		return "Multiplayer + " .. CoD.QuickLaunch.PakNames[pak] .. " DLC", false
+	end
+	return "Multiplayer", false
+end
+
 CoD.QuickLaunch.UsermapsInSurvivalMenu = true
 
 CoD.QuickLaunch.ListRows = 15
@@ -115,7 +171,7 @@ CoD.QuickLaunch.LaunchParty = function ( menu, controller, gametype, group, entr
 end
 
 CoD.QuickLaunch.Say = function ( controller, text )
-	Engine.Exec( controller, "echo mod_to_launch_mp_maps_in_zombies: " .. text )
+	pcall( print, "mod_to_launch_mp_maps_in_zombies: " .. text )
 end
 
 CoD.QuickLaunch.ModeOf = function ( userData )
@@ -138,6 +194,7 @@ CoD.QuickLaunch.InfoRows = {
 	{ "", "", 1 },
 	{ "CONSOLE NAME:", "map", 1 },
 	{ "CONSOLE STARTING LOCATION:", "loc", 1 },
+	{ "REQUIRES:", "requires", 1 },
 }
 
 CoD.QuickLaunch.InfoRowsSurvival = {
@@ -306,6 +363,9 @@ CoD.QuickLaunch.ShowPreview = function ( pane, entry, gametype, group )
 
 	pane.title:setText( CoD.QuickLaunch.LabelOf( entry, pane.labelField ) )
 
+	local missing
+	entry.requires, missing = CoD.QuickLaunch.RequiresOf( entry )
+
 	for i = 1, #pane.rowDefs do
 		local field = pane.rowDefs[i][2]
 		local count = pane.rowDefs[i][3]
@@ -324,6 +384,13 @@ CoD.QuickLaunch.ShowPreview = function ( pane, entry, gametype, group )
 			end
 			row.values[line]:setText( text )
 			row.values[line]:setAlpha( text ~= "" and 1 or 0 )
+			if field == "requires" then
+				if missing then
+					row.values[line]:setRGB( CoD.red.r, CoD.red.g, CoD.red.b )
+				else
+					row.values[line]:setRGB( CoD.green.r, CoD.green.g, CoD.green.b )
+				end
+			end
 		end
 
 		if row.label ~= nil then
@@ -368,7 +435,15 @@ CoD.QuickLaunch.NewMapPage = function ( name, title, entries, gametype, group, c
 	local getData = function ( rowController, index, mutables )
 		local entry = entries[index]
 		if entry ~= nil then
-			mutables.text:setText( CoD.QuickLaunch.LabelOf( entry, labelField ) )
+			local label = CoD.QuickLaunch.LabelOf( entry, labelField )
+			local missing = CoD.QuickLaunch.MissingDlcOf( entry )
+			if missing ~= nil then
+				mutables.text:setText( label .. "  Missing DLC (" .. missing .. ")" )
+				mutables.text:setRGB( CoD.red.r, CoD.red.g, CoD.red.b )
+			else
+				mutables.text:setText( label )
+				mutables.text:setRGB( 1, 1, 1 )
+			end
 		else
 			mutables.text:setText( "" )
 		end

@@ -84,3 +84,7 @@ The console names for all ported maps are listed below:
 ## Disclaimer
 
 Partially developed with generative AI.
+
+### Automatic update checks
+
+Each new map release includes `version.json` inside its map folder and a `usermap_versions.json` release asset. The auto installer compares the installed build ID and Unix build timestamp with the version belonging to the latest ZIP for that map. It labels outdated maps as **update available**, skips current maps, and keeps newer local builds. Older releases still work through the existing installer asset-stamp check. Run the installer again to check for updates.

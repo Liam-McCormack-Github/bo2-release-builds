@@ -75,10 +75,6 @@ run(sub)
 			print_hurt_triggers(player);
 			break;
 
-		case "damage":
-			toggle_damage_report();
-			break;
-
 		case "postracker":
 		case "posTracker":
 			toggle_pos_tracker();
@@ -584,54 +580,6 @@ print_hurt_triggers(player)
 
 		println("^3zm_hurt: " + line);
 	}
-}
-
-
-toggle_damage_report()
-{
-	if (isDefined(level.overrideplayerdamage))
-	{
-		level.overrideplayerdamage = undefined;
-		println("^3zm_damage: off");
-		return;
-	}
-
-	level.overrideplayerdamage = ::damage_report;
-	println("^3zm_damage: on - every hit you take is printed until toggled off");
-}
-
-
-damage_report(einflictor, eattacker, idamage, idflags, smeansofdeath, sweapon, vpoint, vdir, shitloc, psoffsettime)
-{
-	line = "^3zm_damage: " + idamage + "  " + smeansofdeath + "  weapon " + sweapon
-		+ "  at " + scripts\zm\mod_to_launch_mp_maps_in_zombies\commands\utility::print_vector(self.origin);
-
-	if (isDefined(einflictor))
-	{
-		line = line + "  inflictor " + einflictor.classname + " " + scripts\zm\mod_to_launch_mp_maps_in_zombies\commands\utility::print_vector(einflictor.origin);
-
-		if (isDefined(einflictor.script_noteworthy))
-		{
-			line = line + " noteworthy " + einflictor.script_noteworthy;
-		}
-
-		if (isDefined(einflictor.targetname))
-		{
-			line = line + " targetname " + einflictor.targetname;
-		}
-	}
-	else
-	{
-		line = line + "  inflictor none";
-	}
-
-	if (isDefined(eattacker))
-	{
-		line = line + "  attacker " + eattacker.classname;
-	}
-
-	println(line);
-	return idamage;
 }
 
 

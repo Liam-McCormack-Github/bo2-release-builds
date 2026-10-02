@@ -57,17 +57,16 @@ for i = 1, #CoD.QuickLaunch.Usermaps do
 	CoD.QuickLaunch.UsermapNames[CoD.QuickLaunch.Usermaps[i].map] = true
 end
 
-CoD.QuickLaunch.UsermapPaks = {
-	zm_nuketown_2020 = "dlc0",
-	zm_downhill = "dlc1", zm_hydro = "dlc1", zm_mirage = "dlc1", zm_skate = "dlc1",
-	zm_concert = "dlc2", zm_magma = "dlc2", zm_studio = "dlc2", zm_vertigo = "dlc2",
-	zm_bridge = "dlc3", zm_castaway = "dlc3", zm_paintball = "dlc3", zm_uplink = "dlc3",
-	zm_dig = "dlc4", zm_frostbite = "dlc4", zm_pod = "dlc4", zm_takeoff = "dlc4",
+CoD.QuickLaunch.MapPaks = {
+	zm_nuked = "dlczm0",
+	zm_highrise = "dlc1",
+	zm_prison = "dlc2",
+	zm_buried = "dlc3",
+	zm_tomb = "dlc4",
 }
 
 CoD.QuickLaunch.PakNames = {
-	mp = "Multiplayer",
-	dlc0 = "Nuketown 2025",
+	dlczm0 = "Nuketown Zombies",
 	dlc1 = "Revolution",
 	dlc2 = "Uprising",
 	dlc3 = "Vengeance",
@@ -89,7 +88,7 @@ CoD.QuickLaunch.PakAvailable = function ( pak )
 	return value
 end
 CoD.QuickLaunch.MissingDlcOf = function ( entry )
-	local pak = CoD.QuickLaunch.UsermapPaks[entry.map]
+	local pak = CoD.QuickLaunch.MapPaks[entry.map]
 	if pak ~= nil and CoD.QuickLaunch.PakAvailable( pak ) == false then
 		return CoD.QuickLaunch.PakNames[pak]
 	end
@@ -97,7 +96,8 @@ CoD.QuickLaunch.MissingDlcOf = function ( entry )
 end
 
 CoD.QuickLaunch.RequiresOf = function ( entry )
-	if CoD.QuickLaunch.UsermapNames[entry.map] ~= true then
+	local pak = CoD.QuickLaunch.MapPaks[entry.map]
+	if pak == nil then
 		return "", false
 	end
 
@@ -105,12 +105,7 @@ CoD.QuickLaunch.RequiresOf = function ( entry )
 	if missing ~= nil then
 		return "Missing DLC (" .. missing .. ")", true
 	end
-
-	local pak = CoD.QuickLaunch.UsermapPaks[entry.map]
-	if pak ~= nil then
-		return "Multiplayer + " .. CoD.QuickLaunch.PakNames[pak] .. " DLC", false
-	end
-	return "Multiplayer", false
+	return CoD.QuickLaunch.PakNames[pak] .. " DLC", false
 end
 
 CoD.QuickLaunch.UsermapsInSurvivalMenu = true
@@ -137,6 +132,57 @@ CoD.QuickLaunch.PreviewMaterial = function ( map, gametype, group, location )
 	return "loadscreen_" .. map .. "_" .. gametype .. "_" .. location
 end
 
+-- The launch options a usermap reads - the special enemies and der wunderfizz. Each is a dvar the
+-- map scripts read at level start, so they go in the launch command ahead of the map.
+CoD.QuickLaunch.OnOff = {
+	{ label = "OFF", value = 0 },
+	{ label = "ON", value = 1 },
+}
+
+CoD.QuickLaunch.Range = function ( first, last, step )
+	local choices = {}
+	for value = first, last, step do
+		choices[#choices + 1] = { label = tostring( value ), value = value }
+	end
+	return choices
+end
+
+CoD.QuickLaunch.Options = {
+	{ label = "PERK LIMIT", dvar = "zm_mp_map_perk_limit", default = 4, choices = CoD.QuickLaunch.Range( 1, 11, 1 ), hint = "How many perks der wunderfizz will sell you." },
+	{ label = "WUNDERFIZZ COST", dvar = "zm_mp_map_fizz_cost", default = 1500, choices = CoD.QuickLaunch.Range( 500, 10000, 500 ), hint = "The price of a der wunderfizz perk." },
+	{ label = "DOGS", dvar = "zm_mp_map_dogs", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "Hellhound rounds." },
+	{ label = "LEAPERS", dvar = "zm_mp_map_leapers", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "Jumping jack rounds, as on Die Rise." },
+	{ label = "GHOSTS", dvar = "zm_mp_map_ghosts", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "Ghost rounds, as on Buried." },
+	{ label = "SPACE MONKEYS", dvar = "zm_mp_map_monkeys", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "Space monkey rounds, as on Ascension." },
+	{ label = "PENTAGON THIEF", dvar = "zm_mp_map_thief", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "Pentagon thief rounds, as on Five." },
+	{ label = "BRUTUS", dvar = "zm_mp_map_brutus", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "Brutus, as on Mob of the Dead." },
+	{ label = "PANZER", dvar = "zm_mp_map_panzer", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "The Panzer Soldat, as on Origins." },
+	{ label = "AVOGADRO", dvar = "zm_mp_map_avogadro", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "The Avogadro, as on Tranzit." },
+	{ label = "NAPALM ZOMBIE", dvar = "zm_mp_map_napalm", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "The napalm zombie, as on Shangri-La." },
+	{ label = "SHRIEKER", dvar = "zm_mp_map_shrieker", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "The shrieker zombie, as on Shangri-La." },
+	{ label = "ASTRONAUT", dvar = "zm_mp_map_astronaut", default = 0, choices = CoD.QuickLaunch.OnOff, hint = "The astronaut zombie, as on Moon." },
+}
+
+-- Kept for the session, so the next map starts from the last choices.
+CoD.QuickLaunch.OptionValues = {}
+
+CoD.QuickLaunch.OptionValue = function ( option )
+	local value = CoD.QuickLaunch.OptionValues[option.dvar]
+	if value == nil then
+		value = option.default
+	end
+	return value
+end
+
+CoD.QuickLaunch.OptionsCommand = function ()
+	local command = ""
+	for i = 1, #CoD.QuickLaunch.Options do
+		local option = CoD.QuickLaunch.Options[i]
+		command = command .. "set " .. option.dvar .. " " .. tostring( CoD.QuickLaunch.OptionValue( option ) ) .. ";"
+	end
+	return command
+end
+
 CoD.QuickLaunch.LaunchSolo = function ( controller, gametype, group, entry, labelField )
 	Dvar.party_maxplayers:set( 1 )
 
@@ -145,6 +191,11 @@ CoD.QuickLaunch.LaunchSolo = function ( controller, gametype, group, entry, labe
 		.. ";set ui_zm_gamemodegroup " .. group
 		.. ";set ui_zm_mapstartlocation " .. entry.loc
 		.. ";map " .. entry.map
+
+	if CoD.QuickLaunch.UsermapNames[entry.map] == true then
+		command = CoD.QuickLaunch.OptionsCommand() .. command
+	end
+
 	Engine.Exec( controller, command )
 end
 
@@ -155,6 +206,10 @@ CoD.QuickLaunch.LaunchParty = function ( menu, controller, gametype, group, entr
 	Engine.SetDvar( "ui_gametype_pro", 0 )
 	Engine.SetDvar( "ui_mapname", entry.map )
 	Engine.SetDvar( "ui_zm_mapstartlocation", entry.loc )
+
+	if CoD.QuickLaunch.UsermapNames[entry.map] == true then
+		Engine.Exec( controller, CoD.QuickLaunch.OptionsCommand() )
+	end
 
 	Engine.Exec( controller, "xupdatepartystate" )
 	Engine.PartyHostClearUIState()
@@ -205,6 +260,7 @@ CoD.QuickLaunch.InfoRowsSurvival = {
 	{ "", "", 1 },
 	{ "CONSOLE NAME:", "map", 1 },
 	{ "CONSOLE STARTING LOCATION:", "loc", 1 },
+	{ "REQUIRES:", "requires", 1 },
 }
 
 CoD.QuickLaunch.FieldOf = function ( entry, field )
@@ -465,12 +521,131 @@ CoD.QuickLaunch.NewMapPage = function ( name, title, entries, gametype, group, c
 
 	menu:registerEventHandler( "listbox_focus_changed", function ( handlerMenu, event ) CoD.QuickLaunch.ShowPreview( handlerMenu.previewPane, entries[handlerMenu.listBox:getFocussedIndex()], gametype, group ) end )
 
-	menu:registerEventHandler( "click", function ( handlerMenu, event ) local entry = entries[handlerMenu.listBox:getFocussedIndex()] if entry == nil then return end local pickedController = event.controller or handlerMenu.controller if mode == "party" then CoD.QuickLaunch.LaunchParty( handlerMenu, pickedController, gametype, group, entry, labelField ) else CoD.QuickLaunch.LaunchSolo( pickedController, gametype, group, entry, labelField ) end end )
+	menu:registerEventHandler( "click", function ( handlerMenu, event ) local entry = entries[handlerMenu.listBox:getFocussedIndex()] if entry == nil then return end local pickedController = event.controller or handlerMenu.controller if CoD.QuickLaunch.UsermapNames[entry.map] == true then CoD.QuickLaunch.OpenOptions( handlerMenu, pickedController, name, mode, gametype, group, entry, labelField ) elseif mode == "party" then CoD.QuickLaunch.LaunchParty( handlerMenu, pickedController, gametype, group, entry, labelField ) else CoD.QuickLaunch.LaunchSolo( pickedController, gametype, group, entry, labelField ) end end )
 
 	listBox:setTotalItems( #entries )
 	listBox:refresh()
 
 	CoD.QuickLaunch.ShowPreview( pane, entries[1], gametype, group )
+
+	return menu
+end
+
+CoD.QuickLaunch.OpenOptions = function ( menu, controller, pageName, mode, gametype, group, entry, labelField )
+	menu:openMenu( "QuickLaunchOptions", controller, {
+		parent = pageName,
+		mode = mode,
+		gametype = gametype,
+		group = group,
+		entry = entry,
+		labelField = labelField,
+	} )
+	menu:close()
+	Engine.PlaySound( "cac_screen_fade" )
+end
+
+CoD.QuickLaunch.SelectorGap = function ( option )
+	local widest = 0
+	for c = 1, #option.choices do
+		local left, top, right, bottom = GetTextDimensions( option.choices[c].label, CoD.fonts.Condensed, CoD.CoD9Button.TextHeight )
+		if right - left > widest then
+			widest = right - left
+		end
+	end
+	return CoD.QuickLaunch.ListWidth - 2 * CoD.LeftRightSelector.ArrowSize - widest
+end
+
+CoD.QuickLaunch.AddOptionSelectors = function ( buttonList, controller, firstPriority, live )
+	for i = 1, #CoD.QuickLaunch.Options do
+		local option = CoD.QuickLaunch.Options[i]
+		local selector = buttonList:addLeftRightSelector( option.label, CoD.QuickLaunch.OptionValue( option ), CoD.QuickLaunch.SelectorGap( option ), option.hint, firstPriority + i - 1 )
+
+		for c = 1, #option.choices do
+			local choice = option.choices[c]
+			selector:addChoice( choice.label, function ( params, userRequested )
+				CoD.QuickLaunch.OptionValues[params.dvar] = params.value
+				if live and userRequested then
+					Engine.Exec( controller, "set " .. params.dvar .. " " .. tostring( params.value ) )
+				end
+			end, {
+				dvar = option.dvar,
+				value = choice.value
+			} )
+		end
+	end
+end
+
+LUI.createMenu.QuickLaunchOptions = function ( controller, userData )
+	local entry = userData.entry
+	local mode = userData.mode
+	local menu = CoD.Menu.New( "QuickLaunchOptions" )
+	menu.controller = controller
+	menu.anyControllerAllowed = true
+	menu:addSelectButton()
+	menu:addBackButton()
+	menu:registerEventHandler( "open_menu", CoD.Lobby.OpenMenu )
+
+	if mode == "lobby" then
+		menu:addTitle( "BO2 MP OPTIONS" )
+		menu:registerEventHandler( "button_prompt_back", function ( handlerMenu, event )
+			Engine.PartyHostClearUIState()
+			handlerMenu:goBack( event.controller )
+		end )
+	else
+		menu:setPreviousMenu( userData.parent, {
+			mode = mode
+		} )
+		menu:addTitle( CoD.QuickLaunch.LabelOf( entry, userData.labelField or "name" ) )
+		menu:registerEventHandler( "button_prompt_back", CoD.Menu.ButtonPromptBack )
+
+		local pane = CoD.QuickLaunch.NewPreviewPane( CoD.QuickLaunch.InfoRows )
+		pane:setLeftRight( true, false, CoD.QuickLaunch.PaneLeft, CoD.QuickLaunch.PaneLeft + CoD.QuickLaunch.PaneWidth )
+		pane:setTopBottom( true, false, CoD.QuickLaunch.ContentTop, CoD.QuickLaunch.ContentTop + 400 )
+		menu:addElement( pane )
+		pane.labelField = userData.labelField or "name"
+		CoD.QuickLaunch.ShowPreview( pane, entry, userData.gametype, userData.group )
+	end
+
+	local top = CoD.QuickLaunch.ContentTop
+	local rowHeight = CoD.CoD9Button.Height + CoD.ButtonList.ButtonSpacing
+	local height = #CoD.QuickLaunch.Options * rowHeight
+	if mode ~= "lobby" then
+		height = height + rowHeight + CoD.CoD9Button.Height / 2
+	end
+
+	menu.buttonList = CoD.ButtonList.new( {
+		leftAnchor = true,
+		rightAnchor = false,
+		left = 0,
+		right = CoD.QuickLaunch.ListWidth,
+		topAnchor = true,
+		bottomAnchor = false,
+		top = top,
+		bottom = top + height,
+		alpha = 1
+	} )
+	menu.buttonList:setPriority( 10 )
+	menu:addElement( menu.buttonList )
+
+	if mode ~= "lobby" then
+		menu:registerEventHandler( "quicklaunch_options_start", function ( handlerMenu, event )
+			local pickedController = event.controller or handlerMenu.controller
+			if mode == "party" then
+				CoD.QuickLaunch.LaunchParty( handlerMenu, pickedController, userData.gametype, userData.group, entry, userData.labelField )
+			else
+				CoD.QuickLaunch.LaunchSolo( pickedController, userData.gametype, userData.group, entry, userData.labelField )
+			end
+		end )
+		local start = menu.buttonList:addButton( "START", nil, 1 )
+		start:setActionEventName( "quicklaunch_options_start" )
+		menu.buttonList:addSpacer( CoD.CoD9Button.Height / 2, 2 )
+	end
+
+	CoD.QuickLaunch.AddOptionSelectors( menu.buttonList, controller, 3, mode == "lobby" )
+
+	menu.buttonList:processEvent( {
+		name = "gain_focus"
+	} )
 
 	return menu
 end
@@ -620,6 +795,14 @@ LUI.createMenu.PrivateOnlineGameLobby = function ( controller, ... )
 	local menu = CoD.QuickLaunch.StockPrivateOnlineGameLobby( controller, ... )
 	CoD.QuickLaunch.Reapply( controller, menu, "lobby built:" )
 
+	menu:registerEventHandler( "open_bo2_mp_options", function ( handlerMenu, event )
+		Engine.PartyHostSetUIState( CoD.PARTYHOST_STATE_EDITING_GAME_OPTIONS )
+		handlerMenu:openPopup( "QuickLaunchOptions", event.controller, {
+			mode = "lobby"
+		} )
+		Engine.PlaySound( "cac_screen_fade" )
+	end )
+
 	CoD.QuickLaunch.Chain( menu, "gamelobby_update", function ( handlerMenu, event ) CoD.QuickLaunch.Reapply( event.controller or handlerMenu.controller, handlerMenu, "lobby update:" ) end )
 
 	CoD.QuickLaunch.Chain( menu, "menu_close", function ( handlerMenu, event ) CoD.QuickLaunch.Pending = nil end )
@@ -633,6 +816,22 @@ if CoD.PrivateGameLobby ~= nil and CoD.PrivateGameLobby.UpdateHost ~= nil then
 	CoD.PrivateGameLobby.UpdateHost = function ( menu, event )
 		CoD.QuickLaunch.StockUpdateHost( menu, event )
 		CoD.QuickLaunch.Reapply( event.controller or menu.controller, menu, "updatehost:" )
+	end
+end
+
+if CoD.PrivateGameLobby ~= nil and CoD.PrivateGameLobby.PopulateButtons_Project_Zombie ~= nil then
+	CoD.QuickLaunch.StockPopulateLobbyButtons = CoD.PrivateGameLobby.PopulateButtons_Project_Zombie
+
+	CoD.PrivateGameLobby.PopulateButtons_Project_Zombie = function ( buttonPane, isHost )
+		CoD.QuickLaunch.StockPopulateLobbyButtons( buttonPane, isHost )
+
+		if isHost == true then
+			local button = buttonPane.body.buttonList:addButton( "BO2 MP OPTIONS" )
+			button.hintText = "Special enemies and der wunderfizz, for BO2 multiplayer maps."
+			button:setActionEventName( "open_bo2_mp_options" )
+			button:registerEventHandler( "start_game", button.disable )
+			button:registerEventHandler( "cancel_start_game", button.enable )
+		end
 	end
 end
 

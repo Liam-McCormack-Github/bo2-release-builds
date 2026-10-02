@@ -42,18 +42,6 @@ command_watcher()
 
 		switch (command)
 		{
-			case "points":
-				scripts\zm\mod_to_launch_mp_maps_in_zombies\commands\points::run(arg);
-				break;
-
-			case "round":
-				scripts\zm\mod_to_launch_mp_maps_in_zombies\commands\round::run(arg);
-				break;
-
-			case "perka":
-				scripts\zm\mod_to_launch_mp_maps_in_zombies\commands\perka::run();
-				break;
-
 			case "slot":
 				scripts\zm\mod_to_launch_mp_maps_in_zombies\commands\slot::run(arg);
 				break;
